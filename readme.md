@@ -23,7 +23,7 @@
 ### 🔹 主线 C：3D Small-World Express（小世界捷径）
 
 - ✅ 实现 `SW3D_Express.py` 拓扑文件
-- ✅ 支持 express 链路预算控制（B ∈ {0, 0.5N, 1N, 2N}）
+- ✅支持 express 链路预算控制（规则式近似，精确配额待做）
 - [ ] 实现规则式（grid-based）和随机式（random）布线策略
         只写了规则式
 - ✅ 在 TABLE_ 路由中为 express 链路分配低权重
@@ -32,8 +32,8 @@
 ### 🔹 主线 D（加分项）：Hier-3D Chiplet（分层/芯粒化）
 
 - ✅ 实现 `Hier3D_Chiplet.py` 拓扑文件
-- [ ] 支持 chiplet 尺寸配置（如 4×4×1, 4×4×2）
-- [ ] 支持每 chiplet 1 或 2 个网关（gateway）路由器
+- ✅ 支持 chiplet 尺寸配置（如 4×4×1, 4×4×2）
+- ✅ 支持每 chiplet 1 或 2 个网关（gateway）路由器
 - ✅ 构建上层骨干网络连接各 chiplet 网关
 - [ ] 分析层次化结构对局部性与扩展性的影响
 
@@ -229,17 +229,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
----
 
 ## 可选主线 D（加分项）：Hier-3D Chiplet（分层/芯粒化）
 
