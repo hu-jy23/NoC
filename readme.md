@@ -31,10 +31,10 @@
 
 ### 🔹 主线 D（加分项）：Hier-3D Chiplet（分层/芯粒化）
 
-- [ ] 实现 `Hier3D_Chiplet.py` 拓扑文件
+- ✅ 实现 `Hier3D_Chiplet.py` 拓扑文件
 - [ ] 支持 chiplet 尺寸配置（如 4×4×1, 4×4×2）
 - [ ] 支持每 chiplet 1 或 2 个网关（gateway）路由器
-- [ ] 构建上层骨干网络连接各 chiplet 网关
+- ✅ 构建上层骨干网络连接各 chiplet 网关
 - [ ] 分析层次化结构对局部性与扩展性的影响
 
 ### 🧪 共享实验任务
@@ -249,6 +249,48 @@
 
 1. **每个 chiplet 尺寸**：`4×4×1` vs. `4×4×2`
 2. **网关数量**：每个 chiplet 1 或 2 个
+
+
+
+## 说明 & 使用小贴士
+
+* 你无需改 C++ 也无需给 `garnet_synth_traffic.py` 加新参数。
+  要变更 chiplet 尺寸或 GW 数，直接在文件顶部修改：
+
+  * `CHIP_X / CHIP_Y / CHIP_Z`
+  * `GW_PER_CHIPLET = 1 or 2`
+  * `W_INTRA / W_BACKBONE / W_VERTICAL`
+
+* 跑法（示例，与你之前一致）：
+
+  ```bash
+  ./build/NULL/gem5.opt configs/example/garnet_synth_traffic.py \
+    --network=garnet --topology=Hier3D_Chiplet \
+    --num-cpus=64 --num-dirs=64 --mesh-rows=4 \
+    --routing-algorithm=0 \
+    --synthetic=uniform_random --injectionrate=0.05 \
+    --sim-cycles=2000000 \
+    --sys-clock=1GHz --ruby-clock=1GHz \
+    --link-width-bits=128 --link-latency=2 --router-latency=2 \
+    --mem-type=SimpleMemory --mem-channels=64 --mem-size=8192MB
+  ```
+
+* 快速 sanity-check（可选）：
+
+  * 骨干端口应出现在 `config.ini`：
+
+    ```
+    grep -nE '(EastGW|WestGW|NorthGW|SouthGW|UpGW|DownGW)' m5out/config.ini | head
+    ```
+  * 权重直方图应体现 1/2/3：
+
+    ```
+    awk -F= '/^[[:space:]]*weight[[:space:]]*=/{gsub(/[[:space:]]/,"",$2);h[$2]++} \
+             END{for(w in h)printf("%7s %s\n",h[w],w)}' m5out/config.ini | sort -n
+    ```
+
+需要我顺手再给一个“2-GW”配置的示例注释块，或增加一个 `GW_SELECT_POLICY`（例如 Z 方向用独立 gw\_z）也可以。
+
 
 **实现要点**
 
