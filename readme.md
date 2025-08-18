@@ -2,7 +2,85 @@
 
 本实验基于 gem5 的 Garnet 网络模块，完成了多种拓扑结构的实现与测试，包括 **Ring (1D Torus)** 和 **3D Mesh (Mesh3D_XYZ)**。同时，我们对部分配置脚本和路由单元逻辑进行了修改，以支持新的实验需求。
 
+
+
+
+## 📋 任务进度
+
+### 3D MESH:
+```bash
+- ✅ 实现 3D Mesh (Mesh3D_XYZ) 拓扑结构  
+- ✅ 修改 `configs/network/Network.py` 注册新拓扑  
+- ✅ 在 `RoutingUnit.cc` 中添加路由算法调试信息输出  
+- ✅ 配置并运行 `garnet_synth_traffic.py` 进行基础功能验证  
+- [ ] 测试 3D Mesh 在 uniform 流量下的基本通信  
+```
+
+###  Cluster3D_Hub 拓扑
+```bash
+- ✅ 实现 Cluster3D_Hub 拓扑（簇内共享 Hub）
+- [ ] 实现 Sparse3D_Pillars 拓扑（稀疏垂直柱布局）
+- [ ] 实现 SW3D_Express 拓扑（小世界捷径链路）
+- [ ] 为新增拓扑添加参数化支持（如 `--cluster-size`, `--pillar-pitch`, `--express-budget`）
+```
+
+### 测试
+
+- [ ] 运行多流量模式测试（uniform / transpose / hotspot / shuffle）
+- [ ] 扫描注入率（0.01 ~ 0.25），记录平均延迟与吞吐
+- [ ] 对比不同拓扑在相同垂直链路预算下的性能与延迟表现
+- [ ] 分析平均跳数、链路利用率及饱和点变化趋势
+
+- [ ] 撰写实验报告，总结结构设计对 NoC 性能的影响
+- [ ] 整理代码与实验数据，确保可复现性
+
 ---
+
+## ✅ 实验任务列表（按主线划分）
+
+### 🔹 主线 A：Cluster3D（共享垂直链路 / Hub-Cluster）
+
+- ✅ 实现 `Cluster3D_Hub.py` 拓扑文件
+- [ ] 支持 cluster 尺寸配置（如 2×2×1, 2×2×2, 3×3×1）
+- [ ] 实现三种簇内连接方式：Bus、Star、Mini-crossbar
+- ✅ 在 TABLE_ 路由中设置权重，引导流量经 Hub 路由
+- [ ] 在相同垂直链路预算下对比不同 cluster 尺寸的性能
+
+### 🔹 主线 B：Sparse-Vertical 3D（稀疏垂直柱）
+
+- [ ] 实现 `Sparse3D_Pillars.py` 拓扑文件
+- [ ] 支持可调 pillar 间距（Px, Py ∈ {1,2,4}）
+- [ ] 实现整层对齐与交错（staggered）两种柱布局
+- [ ] 使用 TABLE_ 路由策略，优先引导至最近 pillar
+- [ ] 绘制“垂直链路数量 vs. 平均延迟”关系曲线
+
+### 🔹 主线 C：3D Small-World Express（小世界捷径）
+
+- [ ] 实现 `SW3D_Express.py` 拓扑文件
+- [ ] 支持 express 链路预算控制（B ∈ {0, 0.5N, 1N, 2N}）
+- [ ] 实现规则式（grid-based）和随机式（random）布线策略
+- [ ] 在 TABLE_ 路由中为 express 链路分配低权重
+- [ ] 分析 express 链路对低/高注入率下的性能增益
+
+### 🔹 主线 D（加分项）：Hier-3D Chiplet（分层/芯粒化）
+
+- [ ] 实现 `Hier3D_Chiplet.py` 拓扑文件
+- [ ] 支持 chiplet 尺寸配置（如 4×4×1, 4×4×2）
+- [ ] 支持每 chiplet 1 或 2 个网关（gateway）路由器
+- [ ] 构建上层骨干网络连接各 chiplet 网关
+- [ ] 分析层次化结构对局部性与扩展性的影响
+
+### 🧪 共享实验任务
+
+- [ ] 配置多流量模式：uniform_random、transpose、hotspot、shuffle
+- [ ] 扫描注入率（0.01 → 0.25），记录平均延迟与吞吐
+- [ ] 提取关键指标：平均跳数、链路利用率、饱和点
+- [ ] 对比各拓扑在相同资源预算下的性能差异
+- [ ] 生成延迟-注入率曲线图与对比表格
+- [ ] 撰写实验报告，突出结构设计的权衡与洞察
+- [ ] 整理代码与实验数据，确保可复现性
+
+
 
 ## 📂 文件与改动说明
 
