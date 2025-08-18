@@ -51,14 +51,6 @@
 
 ## 📂 文件与改动说明
 
-### 1. `configs/topologies/Ring.py`
-- **用途**：新增的拓扑文件，实现了 **环形 (1D Torus)** 拓扑。
-- **主要改动**：
-  - 定义了节点与路由器的映射关系。
-  - 配置了路由器之间的环形连线。
-  - 支持通过 `--topology=Ring` 参数调用。
-
----
 
 ### 2. `configs/topologies/Mesh3D_XYZ.py`
 - **用途**：新增的拓扑文件，实现了 **三维 Mesh (4×4×4 等规模)** 拓扑。
@@ -97,26 +89,6 @@
 
 ---
 
-### 5. `configs/example/garnet_synth_traffic.py`
-- **用途**：实验入口脚本，用于运行合成流量 (synthetic traffic) 测试。
-- **使用方式**：
-  - 运行 Ring：
-    ```bash
-    ./build/NULL/gem5.opt configs/example/garnet_synth_traffic.py \
-      --network=garnet --topology=Ring \
-      --num-cpus=16 --num-dirs=16 \
-      --injectionrate=0.05 --sim-cycles=10000
-    ```
-  - 运行 3D Mesh (64 nodes, 4×4×4)：
-    ```bash
-    ./build/NULL/gem5.opt configs/example/garnet_synth_traffic.py \
-      --network=garnet --topology=Mesh3D_XYZ_ \
-      --num-cpus=64 --num-dirs=64 --mesh-rows=4 \
-      --routing-algorithm=3 \
-      --synthetic=uniform_random \
-      --injectionrate=0.05 --sim-cycles=1000000
-    ```
-
 ---
 
 ## 🧪 实验说明
@@ -140,10 +112,6 @@
 
 
 
-
-太能理解了——如果只做“3D Mesh + 几个 3D 化的路由”，确实显得单薄。既然你**想把重心放在拓扑设计**，我给你一套**可在 gem5/Garnet 3.0 里10天内做完、且有设计深度**的方案包：3 条主线（每条含 1–2 个可控“旋钮”做消融），加上实验矩阵与落地步骤。选其中 2 条主线做深做透，就已经很饱满了；全做更是 A+。
-
----
 
 # 总体目标
 
@@ -220,6 +188,56 @@
 * 新建 `SW3D_Express.py`：在生成基础 3D Mesh 后，**额外 append 一批 `IntLink`** 即可。
 * 路由：**`TABLE_`**（表驱动天然能把 express 作为候选路径，用较小权重引导）或轻改 `XYZ_` 为“先尝试朝 express 方向”。
 * 指标：在 **相同总线宽/线长预算**下，对比 express 数量对**低注入/临界点/饱和区**的影响；画**收益-成本**曲线。
+
+## 快速对比基线 vs. express
+
+建议立刻做一组对比（相同注入率、相同 cycles）：
+
+```bash
+# Baseline 3D Mesh
+./build/NULL/gem5.opt -d runs_baseline \
+  configs/example/garnet_synth_traffic.py \
+  --network=garnet --topology=Mesh3D_XYZ_ \
+  --num-cpus=64 --num-dirs=64 --mesh-rows=4 \
+  --routing-algorithm=3 \
+  --synthetic=uniform_random --injectionrate=0.05 \
+  --sim-cycles=2000000 \
+  --sys-clock=1GHz --ruby-clock=1GHz \
+  --link-width-bits=128 --link-latency=2 --router-latency=2 \
+  --mem-type=SimpleMemory --mem-channels=64 --mem-size=8192MB
+
+# SW3D_Express（express 权重=0 版本）
+./build/NULL/gem5.opt -d runs_swexp_w0 \
+  configs/example/garnet_synth_traffic.py \
+  --network=garnet --topology=SW3D_Express \
+  --num-cpus=64 --num-dirs=64 --mesh-rows=4 \
+  --routing-algorithm=0 \
+  --synthetic=uniform_random --injectionrate=0.05 \
+  --sim-cycles=2000000 \
+  --sys-clock=1GHz --ruby-clock=1GHz \
+  --link-width-bits=128 --link-latency=2 --router-latency=2 \
+  --mem-type=SimpleMemory --mem-channels=64 --mem-size=8192MB
+```
+
+然后用你的 `collect.sh / plot_metrics.py` 画出延迟-注入率曲线，重点看：
+
+* `average_packet_latency` 是否下降；
+* `average_hops` 是否从 \~3.75 明显降低（≥5% 就很直观）；
+* `packets_received/accepted_rate` 在饱和前区段有无提升。
+
+如果你把 `W_EXP` 改成 0 之后，平均跳数仍不变，那就加大 **express 跳距/覆盖度** 或改规则式布局参数（例如每 2 个坐标放一条跨两跳的对角线），让它确实能缩短距离。
+
+
+
+
+
+
+
+
+
+
+
+
 
 ---
 
