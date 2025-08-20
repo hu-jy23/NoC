@@ -59,6 +59,18 @@
   - 配置了 X、Y、Z 三个方向的链路。
   - 支持通过 `--topology=Mesh3D_XYZ_` 参数调用。
 
+SHELL:
+
+```BASH
+./build/NULL/gem5.opt configs/example/garnet_synth_traffic.py \
+  --network=garnet --topology=Mesh3D_XYZ_ \
+  --num-cpus=64 --num-dirs=64 --mesh-rows=4 \
+  --routing-algorithm=3 \
+  --synthetic=uniform_random --injectionrate=0.05 \
+  --sim-cycles=1000000 \
+  --sys-clock=1GHz --ruby-clock=1GHz
+```
+
 ---
 
 ### 3. `configs/network/Network.py`
@@ -88,6 +100,88 @@
     ```
 
 ---
+
+### 5. `Cluster3D_Hub.py`
+- **：Cluster Mesh（共享垂直链路/Hub-Cluster）；每个 2×2 区域共享中心 Hub，Hub 仅转发；支持在文件内设置 `vlink_speedup / hub_speedup / vlink_parallel` 并通过 权重 引导经 Hub。**
+
+shell:
+```bash
+./build/NULL/gem5.opt configs/example/garnet_synth_traffic.py \
+  --network=garnet --topology=Cluster3D_Hub \
+  --num-cpus=64 --num-dirs=64 --mesh-rows=4 \
+  --routing-algorithm=0 \
+  --synthetic=uniform_random --injectionrate=0.12 \
+  --sim-cycles=2000000 \
+  --sys-clock=1GHz --ruby-clock=1GHz \
+  --link-width-bits=128 --link-latency=2 --router-latency=2 \
+  --mem-type=SimpleMemory --mem-channels=64 --mem-size=8192MB \
+  --garnet-deadlock-threshold=10000000
+  ```
+
+
+### 6. `Sparse3D_Pillars.py`
+
+- **用途**：新增的拓扑文件，实现了 **Sparse-Pillars** 拓扑。
+- **主要改动**：疏垂直柱拓扑；按间距 `Px, Py` 只在柱位布 Up/Down；整层对齐版本；`TABLE_` + 权重（X\<Y\<Z）优先走柱。
+
+shell:
+```bash
+# 64 routers = 4 x 4 x 4
+./build/NULL/gem5.opt configs/example/garnet_synth_traffic.py \
+  --network=garnet --topology=Sparse3D_Pillars \
+  --num-cpus=64 --num-dirs=64 --mesh-rows=4 \
+  --routing-algorithm=0 \             # TABLE_
+  --synthetic=uniform_random --injectionrate=0.05 \
+  --sim-cycles=1000000 \
+  --sys-clock=1GHz --ruby-clock=1GHz \
+  --link-width-bits=128 --link-latency=2 --router-latency=2 \
+  --mem-type=SimpleMemory --mem-channels=64 --mem-size=8192MB
+  ```
+
+
+## 7. `SW3D_Express.py`
+- **用途**：新增的拓扑文件，实现了 **三维小世界** 拓扑。
+- **主要改动**：3D Small-World Express；在 3D Mesh 上按规则式网格撒少量 express（含平面跨 2 跳与跨层对角），端口命名如 `EastExp/UpExp`；`TABLE_` 下给 express 更低权重（偏好使用）。
+
+shell:
+```bash
+./build/NULL/gem5.opt configs/example/garnet_synth_traffic.py \
+  --network=garnet --topology=SW3D_Express \
+  --num-cpus=64 --num-dirs=64 --mesh-rows=4 \
+  --routing-algorithm=0 \
+  --synthetic=uniform_random --injectionrate=0.05 \
+  --sim-cycles=2000000 \
+  --sys-clock=1GHz --ruby-clock=1GHz \
+  --link-width-bits=128 --link-latency=2 --router-latency=2 \
+  --mem-type=SimpleMemory --mem-channels=64 --mem-size=8192MB
+```
+
+## 8. `Hier3D_Chiplet.py`
+- **用途**：新增的拓扑文件，实现了 **分层/芯粒化** 拓扑。
+- **主要改动**：分层/芯粒化拓扑；将全网划分为若干 chiplet（片内 2D mesh），每个 chiplet 带 1\~2 个 **gateway**（端口如 `EastGW/UpGW`），chiplet 之间通过上层骨干互联；`TABLE_` 权重区分片内/网关/骨干路径。
+
+使用：
+```bash
+./build/NULL/gem5.opt configs/example/garnet_synth_traffic.py \
+  --network=garnet --topology=Hier3D_Chiplet \
+  --num-cpus=64 --num-dirs=64 --mesh-rows=4 \
+  --routing-algorithm=0 \
+  --synthetic=uniform_random --injectionrate=0.05 \
+  --sim-cycles=2000000 \
+  --sys-clock=1GHz --ruby-clock=1GHz \
+  --link-width-bits=128 --link-latency=2 --router-latency=2 \
+  --mem-type=SimpleMemory --mem-channels=64 --mem-size=8192MB
+```
+
+
+
+
+
+
+
+
+
+
 
 ---
 
