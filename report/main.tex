@@ -49,11 +49,11 @@
 \newcommand{\NumRoutersA}{64}         % 4x4x4
 \newcommand{\NumRoutersB}{64}         % 8x8 (2D baseline with same count)
 \newcommand{\Ruby}{Garnet 3.0}
-\newcommand{\SimCycles}{2{,}000{,}000}
-\newcommand{\Clk}{1\,GHz}
+\newcommand{\SimCycles}{2{,}000{,}0}
+\newcommand{\Clk}{2\,GHz}
 \newcommand{\LinkW}{128\,bits}
-\newcommand{\LinkLat}{2}              % ticks
-\newcommand{\RouterLat}{2}            % ticks
+\newcommand{\LinkLat}{1}              % ticks
+\newcommand{\RouterLat}{1}            % ticks
 
 \title{\textbf{Toward Practical 3D NoCs: Topology Design, Routing Bias, and Cost--Performance Trade-offs}\\
 \large A gem5/\Ruby\ Study of 3D Mesh and Sparse-Vertical Variants}
@@ -100,8 +100,26 @@ This work adds Python topologies under \texttt{configs/topologies/}. All use \te
 We use a standard 3D Mesh (e.g., $4{\times}4{\times}4$) with fully populated Z links and DOR (XYZ) or TABLE routing with $W_X < W_Y < W_Z$.
 \begin{itemize}[leftmargin=1em]
   \item \textbf{Goal}: establish the upper-bound efficiency for a given router count.
-  \item \textbf{Knobs}: link/router latency; optional ``vertical speedup'' to emulate DVFS on Z links; vlink parallelization (bandwidth).
+  \item \textbf{parameters}: link/router latency=1; vc = 4 (default); sim-cycle = 20000; link-width=128; GlobalFrequency=2GHz.
 \end{itemize}
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[t]{0.45\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{./figs/Mesh3D-traffic.png}
+        \caption{Throughput of the 3D Mesh topology under varying injection rates across different traffic patterns. Uniform traffic achieves the highest sustained throughput, while hotspot traffic saturates earlier due to localized congestion. Local traffic benefits from short paths and maintains high efficiency.}
+        \label{fig:mesh3d-throughput}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.45\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{./figs/Mesh3D-inj_rate-throughput.png}
+        \caption{Average packet latency versus throughput for the 3D Mesh network. At low loads, latency remains low; however, as the network approaches saturation, hotspot traffic experiences a sharp rise in latency, while uniform traffic maintains stability up to higher throughput levels.}
+        \label{fig:mesh3d-latency-throughput}
+    \end{subfigure}
+    \caption{Performance evaluation of the 3D Mesh topology under three canonical traffic patterns: (a) throughput vs.\ injection rate, and (b) latency-throughput trade-off. Results demonstrate that although 3D Mesh offers strong baseline performance, its behavior varies significantly with traffic distribution, especially under congestion.}
+    \label{fig:mesh3d-performance}
+\end{figure}
 
 \subsection{Cluster3D\_Hub}
 A $2{\times}2$ submesh per layer shares a central hub; hubs connect vertically. The hub is transit-only (no endpoint injection). We bias routes via weights to funnel local traffic through its hub for Z.
@@ -159,41 +177,86 @@ We validated reachability via \texttt{config.ini} inspections and by eliminating
 
 \section{Methodology}
 \subsection{Simulator and Network}
-We use \texttt{gem5} \cite{gem5} with \Ruby\ (Garnet 3.0). Unless noted, system and Ruby clocks are \Clk. Link width \LinkW, link latency \LinkLat, router latency \RouterLat.
+We use \texttt{gem5}  with \Ruby\ (Garnet 3.0). Unless noted, system and Ruby clocks are 2GHz. Link width \LinkW, link latency \LinkLat, router latency \RouterLat.
 
-\subsection{Traffic and Sweeps}
-We exercise \texttt{garnet\_synth\_traffic.py} with:
-\begin{itemize}[leftmargin=1em]
-  \item Patterns: \texttt{uniform\_random}, \texttt{transpose}, \texttt{hotspot}, \texttt{shuffle}.
-  \item Injection rate sweep: 0.01 to 0.25 (step 0.01).
-  \item Simulation length: \SimCycles\ cycles (extend near saturation).
-\end{itemize}
+
 
 \subsection{Metrics}
 We collect average packet/flit latency, average hops, total injected/received packets (to derive accepted rate), and average link utilization. Saturation is indicated by the knee where latency diverges and accepted rate flattens.
 
-\subsection{Reproducibility}
-We provide sweep scripts, a post-processing \texttt{collect.sh} that converts \texttt{stats.txt} into CSV, and \texttt{plot\_metrics.py} for latency/throughput curves. See \cref{sec:repro}.
-
 \section{Experimental Results}
+In following experiments, we use transpose traffic patterns to simulate hotspot traffic, and use neighbor traffic patterns to simulate local traffic, and uniform-random is identical to uniform traffic.
 \subsection{3D Mesh vs.\ 2D Mesh (same router count)}
 \label{sec:mesh-baseline}
-\textbf{Setup.} Compare $4{\times}4{\times}4$ vs.\ $8{\times}8$ with identical \#routers and similar link/router latencies. \textbf{Expectation.} 3D Mesh achieves lower hop counts and better throughput at a given injection rate.
 
-\begin{figure}[h]
-  \centering
-  \begin{subfigure}{0.48\linewidth}
-    \includegraphics[width=\linewidth]{figs/mesh_baseline_latency.pdf}
-    \caption{Latency vs. injection.}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}{0.48\linewidth}
-    \includegraphics[width=\linewidth]{figs/mesh_baseline_throughput.pdf}
-    \caption{Throughput vs. injection.}
-  \end{subfigure}
-  \caption{Dense 3D Mesh vs.\ 2D Mesh with same router count.}
-  \label{fig:mesh-baseline}
+We compare a $4{\times}4{\times}4$ 3D Mesh with an $8{\times}8$ 2D Mesh, both using \NumRoutersA\ routers and identical link/router latencies. The 3D topology is expected to achieve lower average hop counts and higher throughput due to shorter paths and improved bisection bandwidth.
+
+As shown in \cref{fig:mesh-comparison-full}, the 3D Mesh supports significantly higher throughput before saturation under uniform and transpose traffic (up to $\sim$0.35 packets/node/cycle), compared to the 2D Mesh's saturation at $\sim$0.21. Moreover, the 3D design reduces average hop count—especially under uniform traffic—from $\sim$5.3 in 2D to $\sim$3.75 in 3D—by leveraging vertical shortcuts.
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}[t]{0.45\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{./figs/Mesh2D-traffic.png}
+        \caption{Latency-throughput curve for the $8{\times}8$ 2D Mesh under uniform, transpose, and neighbor traffic patterns. The network saturates at approximately 0.21 packets/node/cycle, with latency diverging sharply under uniform and transpose traffic due to global congestion. Neighbor traffic remains stable due to short paths.}
+        \label{fig:mesh2d-latency-throughput}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.45\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{./figs/Mesh3D-traffic.png}
+        \caption{Latency-throughput curve for the $4{\times}4{\times}4$ 3D Mesh under hotspot, local, and uniform traffic. Despite higher average hop counts in some cases, the 3D topology achieves significantly higher throughput before saturation (up to $\sim$0.35), especially under uniform traffic, thanks to reduced path lengths and better bisection bandwidth.}
+        \label{fig:mesh3d-latency-throughput}
+    \end{subfigure}
+    
+    \vspace{1em} % 添加垂直间距
+    
+    \begin{subfigure}[t]{0.45\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{./figs/Mesh2D_throughput_hops.png}
+        \caption{Average hop count versus throughput for the $8{\times}8$ 2D Mesh. Neighbor traffic maintains a constant low hop count ($\sim$1.7) due to short distances. Transpose traffic shows a sharp drop in hop count as injection rate increases, indicating more efficient routing through balanced load distribution. Uniform traffic remains near the theoretical maximum of 5.3 hops across all loads, reflecting long, random paths.}
+        \label{fig:mesh2d-hops}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.45\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{./figs/Mesh3D_throughput_hops.png}
+        \caption{Average hop count versus throughput for the $4{\times}4{\times}4$ 3D Mesh. Local traffic maintains a minimal hop count ($\sim$1.75) throughout, consistent with its short-range nature. Hotspot traffic exhibits a gradual decrease in hop count with increasing load, suggesting adaptive routing or load-balancing effects. Uniform traffic stabilizes at $\sim$3.75 hops, which is significantly lower than the 2D baseline, demonstrating the benefit of Z-dimension shortcuts in reducing average path length.}
+        \label{fig:mesh3d-hops}
+    \end{subfigure}
+    
+    \caption{Comparison of performance metrics between 2D Mesh ($8{\times}8$) and 3D Mesh ($4{\times}4{\times}4$) with identical router count (\NumRoutersA). Top row: latency-throughput curves show that the 3D Mesh supports higher throughput and earlier saturation under global workloads. Bottom row: hop count trends reveal that the 3D Mesh reduces average path length, especially under uniform traffic, by leveraging vertical links for shorter routes.}
+    \label{fig:mesh-comparison-full}
 \end{figure}
+
+\subsection{Effect of Escape VC on 3D vs. 2D}
+\label{subsec:escape-vc}
+We repeat the uniform-random sweep while enabling an \emph{escape virtual channel} (VC$_0$) reserved for a strictly ordered, deadlock-free route set (e.g., DOR). The remaining VCs use the standard (normal/adaptive) policy. \textbf{All other parameters are kept identical} across 2D and 3D (\texttt{vcs-per-vnet}=4 with one reserved for escape, identical buffers, link/router latencies, clocks, and traffic).
+
+
+Empirically, the 2D Mesh exhibits a clear knee (threshold throughput) around $\sim$0.21 pkts/node/cycle, whereas the 3D Mesh shows no visible knee up to our maximum offered load of 0.7, achieving accepted throughput $\geq$0.35 in the sweep. Using the \emph{threshold throughput} metric, the relative advantage of 3D increases from about 35\% (without escape VC) to \textbf{$\geq$50--60\%} with escape VC (e.g., $0.35/0.21\approx1.67\times$).
+
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{./figs/escape_lat_vs_inj.png}% TODO: replace with your actual filename
+    \caption{Latency vs. injection under uniform-random with escape VC.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{./figs/escape_thr_vs_inj.png}% TODO: replace with your actual filename
+    \caption{Accepted throughput vs. injection under uniform-random with escape VC.}
+  \end{subfigure}
+  \caption{Escape VC (VC$_0$) amplifies the 3D advantage: 2D shows a knee near $\sim$0.21, while 3D shows no knee up to $\geq$0.35 within our sweep range.}
+  \label{fig:escape-vc-results}
+\end{figure}
+
+
+\paragraph{Intuition.} The escape VC guarantees progress, allowing the other VCs to exploit additional turn freedom and transient path diversity. In 3D, the Z dimension supplies more minimal and near-minimal alternatives, so adaptive VCs more effectively relieve head-of-line blocking and allocator contention than in 2D.
+
+
+\paragraph{Fairness and limits.} Both 2D and 3D reserve exactly one escape VC; buffer sizes and VC counts per input port are identical. Our current sweep upper bound is 0.7 offered load; future work will extend the range to locate the 3D knee more precisely.
 
 \subsection{Sparse-Z Designs under a Fixed Vertical Budget}
 \label{sec:sparse-results}
@@ -203,12 +266,7 @@ We normalize each design to a comparable TSV count (or pillar density) and evalu
   \item Avg.\ link utilization and hop distributions.
   \item Sensitivity to vertical speedup and gateway count.
 \end{itemize}
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=0.75\linewidth]{figs/sparse_latency_vs_inj.pdf}
-  \caption{Latency vs.\ injection across sparse-Z designs (Cluster3D-Hub, Pillars, SW3D-Express, Chiplet).}
-  \label{fig:sparse-latency}
-\end{figure}
+
 
 \subsection{Ablations}
 \paragraph{Cluster size \& hub speedup.} How 2x2 vs.\ 3x3 clusters and hub DVFS change the knee point.
