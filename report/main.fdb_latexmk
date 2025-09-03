@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex main"] 1756795252.24115 "main.aux" "main.bbl" "main" 1756795481.6694 0
+["bibtex main"] 1756919079.44473 "main.aux" "main.bbl" "main" 1756919081.8841 0
   "./references.bib" 1755590870 11344 8953a27a1d05626d5b7ecaa964bac8a5 ""
   "D:/App/MiKTeX/bibtex/bst/bibtex/abbrv.bst" 1291864736 20329 b5fed53e10044d0f8112183785c759b1 ""
-  "main.aux" 1756795480 14710 8de6bc61d21e77332c64950594fd2b5c "pdflatex"
+  "main.aux" 1756919081 15591 a839243a4cbc263ef73aa58115288afd "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1756795479.52051 "d:/学习/gem5-modified-extracted/report/main.tex" "main.pdf" "main" 1756795481.67015 0
+["pdflatex"] 1756919079.67772 "d:/学习/gem5-modified-extracted/report/main.tex" "main.pdf" "main" 1756919081.8848 0
   "C:/Users/zazza/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1755589947 82507 a9eef8696c92627b87e9975edea03b2a ""
   "C:/Users/zazza/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1746605797 24210506 fff70f1766fa0d5f8cf749a71b0e3b2a ""
   "D:/App/MiKTeX/fonts/enc/dvips/lm/lm-ec.enc" 1256929440 2375 baa924870cfb487815765f9094cf3728 ""
@@ -59,6 +59,7 @@
   "D:/App/MiKTeX/fonts/type1/public/lm/lmr10.pfb" 1256929440 119235 05e5c8d6d60439433e50047898c2c0e0 ""
   "D:/App/MiKTeX/fonts/type1/public/lm/lmr12.pfb" 1256929440 113634 9384aebdf26f9881e046a4b5574566db ""
   "D:/App/MiKTeX/fonts/type1/public/lm/lmr6.pfb" 1256929440 123394 992f5e87d698d9e94717394c62580ea6 ""
+  "D:/App/MiKTeX/fonts/type1/public/lm/lmr7.pfb" 1256929440 121145 00b210fbe9efd7ce850c04e64670de9a ""
   "D:/App/MiKTeX/fonts/type1/public/lm/lmr8.pfb" 1256929440 122174 a2d5e73f396ddbeb3bdf5c79aea0993d ""
   "D:/App/MiKTeX/fonts/type1/public/lm/lmri10.pfb" 1256929440 112593 fda2373ba4420af33949610de4c28fe8 ""
   "D:/App/MiKTeX/fonts/type1/public/lm/lmsy10.pfb" 1256929440 27863 09ce3735688ffde955e72da27c95b61a ""
@@ -152,7 +153,7 @@
   "D:/App/MiKTeX/tex/latex/translations/translations.sty" 1644048522 44247 2188b95d0ee74e31eca4d316263c58a7 ""
   "D:/App/MiKTeX/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "D:/App/MiKTeX/tex/latex/xcolor/xcolor.sty" 1700127522 55487 80a65caedd3722f4c20a14a69e785d8f ""
-  "d:/学习/gem5-modified-extracted/report/main.tex" 1756795478 22836 e912b216d8fae2e2cfb1e3e81e76e0e7 ""
+  "d:/学习/gem5-modified-extracted/report/main.tex" 1756919076 26658 e08b8b6091d40feded6b56d452f166a0 ""
   "figs/Mesh2D-traffic.png" 1756487975 80601 cad27e2e0737aac3e65f367d4f63e2ba ""
   "figs/Mesh2D_throughput_hops.png" 1756489130 56644 2cea9ee213f1beb7cbd2f6f071d75ac6 ""
   "figs/Mesh3D-inj_rate-throughput.png" 1756487092 83982 ca551deee01be1cb58abf195d11a0d27 ""
@@ -160,10 +161,12 @@
   "figs/Mesh3D_throughput_hops.png" 1756489070 80047 934ef26ddfad5e8f404bd7a2e88dd102 ""
   "figs/escape_lat_vs_inj.png" 1756795440 119552 e44efc181cdace276fbe51745e93f0e3 ""
   "figs/escape_thr_vs_inj.png" 1756795455 123838 5c5af7a50b7343e9e878b6ba8929cf93 ""
-  "main.aux" 1756795480 14710 8de6bc61d21e77332c64950594fd2b5c "pdflatex"
-  "main.bbl" 1756795252 52 0eba253fc001332e731e8aba3f23127b "bibtex main"
-  "main.out" 1756795480 5014 8cb40f9230bc46c37356de0b9715ea40 "pdflatex"
-  "main.tex" 1756795478 22836 e912b216d8fae2e2cfb1e3e81e76e0e7 ""
+  "figs/overview_mixed_zlatency.png" 1756917385 151722 554b779ab9573fef07373980638c3246 ""
+  "figs/tsv_latency_sweep_sparse_torus.png" 1756917397 181162 b6ffd497208b7b91b648a3b0c02bba7d ""
+  "main.aux" 1756919081 15591 a839243a4cbc263ef73aa58115288afd "pdflatex"
+  "main.bbl" 1756919079 52 0eba253fc001332e731e8aba3f23127b "bibtex main"
+  "main.out" 1756919081 4545 423d6d3f0b44a2361a25a6f273d3a9c5 "pdflatex"
+  "main.tex" 1756919076 26658 e08b8b6091d40feded6b56d452f166a0 ""
   (generated)
   "main.aux"
   "main.log"

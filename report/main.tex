@@ -64,33 +64,87 @@
 \begin{document}
 \maketitle
 \doublespacing
-
 \begin{abstract}
-While 2D Network-on-Chip (NoC) fabrics are mature and widely deployed, industry is actively exploring 3D NoC organizations to unlock higher bisection bandwidth and lower hop counts without growing chip footprint. Using \texttt{gem5} with \Ruby, we first reproduce the well-known efficiency advantage of a 3D Mesh against a 2D Mesh with the \emph{same number of routers} (e.g., \NumRoutersA\ vs.\ \NumRoutersB). However, dense per-router TSV columns exacerbate manufacturing yield risks and area/power overhead, as reported by prior cluster mesh studies. Motivated by these practical constraints, we implement several 3D topologies with \emph{sparser Z connectivity}: (i) Cluster3D with hub-based vertical sharing, (ii) Sparse3D Pillars, (iii) 3D Small-World Express links, and (iv) Hierarchical 3D Chiplets. We provide configurable Python topologies, weight-based TABLE routing to bias paths, and a measurement methodology. Our experiments sweep injection rates across traffic patterns, exposing how each design trades off performance (latency/throughput) versus TSV budget and routing simplicity. 
+This paper studies \emph{practical} 3D Network-on-Chip (NoC) design under
+manufacturing and area constraints. Using \texttt{gem5}/\Ruby\ (Garnet 3.0),
+we implement dense 3D Mesh and several sparse-Z variants (pillars, hub, torus
+augmented) and evaluate them against a same-router-count 2D Mesh under
+uniform traffic. We use the throughput \emph{knee} as our primary metric.
+
+\textbf{Key findings.} (i) With equal link latencies, a $4{\times}4{\times}4$
+3D Mesh sustains a $\sim$35\% higher threshold throughput than an $8{\times}8$
+2D Mesh. (ii) Enabling an \emph{escape virtual channel} (VC$_0$ for an acyclic
+route set) amplifies the 3D advantage to $\ge$50--60\%. (iii) In a
+\emph{process-aware} setting that penalizes dense 3D with slow Z links
+(Z-latency=4) but allows sparse-Z designs to use faster TSVs (Z=1), Torus3D
+offers the largest headroom; Mesh3D\_XYZ approaches Mesh\_XY because
+\emph{Z-latency dominates}, whereas 2D is constrained by \emph{area/diameter}.
+(iv) A TSV-latency sweep shows a consistent \emph{torus multiplier} of
+$\approx$2.2–2.4$\times$ in the knee for Sparse3D vs.\ Sparse3D\_Pillars\_torus
+(Z$\in\{1,2,4\}$: $\sim$0.10/0.16/0.22 vs.\ $\sim$0.22/0.38/0.50).
+
+\textbf{Guidance.} When TSV budget is limited, prefer sparse-Z to recover
+process margin and invest it in reducing effective Z-latency; if floorplan and
+timing allow wrap-around, prioritize torus before micro-topology tweaks; and
+use an escape VC to safely harvest 3D path diversity.
 \end{abstract}
 
 \section{Introduction}
-2D NoCs have benefited from years of architectural optimization and tooling. As transistor scaling slows and multi-die integration rises, 3D NoCs promise better path lengths and bandwidth density. Yet, deploying dense vertical connections (TSVs or micro-bumps) at each router often faces yield, cost, and thermal constraints. As a result, practical systems seek \emph{structured sparsity} in the Z dimension: not every router needs its own vertical link, so long as the network can route efficiently to shared vertical resources.
+2D NoCs are mature and easy to implement, but their average distance and
+bisection bandwidth ultimately limit throughput. 3D organizations add the
+Z dimension to shorten paths and raise bandwidth density, yet dense per-router
+TSVs stress yield, thermals, and timing. In practice, designers trade Z
+\emph{density} for TSV \emph{quality}, and decide whether wrap-around (torus)
+is feasible in area and timing.
 
-This project asks: \emph{(1) How much efficiency do we retain when we replace a fully dense 3D Mesh with more practical, sparse-Z topologies? (2) Which sparse patterns strike the best balance between performance and implementation cost?} We build four representative families in \texttt{gem5}/\Ruby\ and evaluate them against classic 3D/2D Mesh baselines.
+This paper takes a \emph{process-aware} view of 3D NoCs. We model TSV quality
+via a Z-link latency parameter and explore (i) dense 3D Mesh, (ii) sparse-Z
+pillars and hub variants that can plausibly use faster TSVs, and (iii) torus
+augmentations. We also evaluate the role of an \emph{escape VC}, which
+guarantees deadlock-freedom while letting other VCs exploit 3D path diversity.
 
-\paragraph{Contributions.}
+\paragraph{Questions.}
+(1) How large is the 3D advantage over a same-router-count 2D Mesh under equal
+latencies, and how does an escape VC change it? (2) When TSV process penalizes
+dense Z but benefits sparse-Z designs, which organization retains more of the
+3D benefit? (3) How strong is the torus effect across TSV qualities?
+
+
 \begin{itemize}[leftmargin=1.2em]
-  \item A clean set of \texttt{configs/topologies} for 3D Mesh and three sparse-Z designs (Cluster3D-Hub, Sparse3D-Pillars, SW3D-Express) plus a hierarchical 3D Chiplet fabric.
-  \item Weight-based TABLE routing schemes that bias traffic toward designated vertical conduits or express links while preserving deadlock freedom.
-  \item A reproducible measurement pipeline (sweeps, CSV collection, plotting) to compare latency, throughput, link utilization, and saturation points under uniform and non-uniform traffic.
-  \item Case studies of cost--performance trade-offs under fixed ``vertical budget,'' highlighting where sparse designs approach dense mesh performance.
+  \item \textbf{Implementations.} Configurable topologies in
+        \texttt{configs/topologies}: dense 3D Mesh, Cluster3D\_Hub,
+        Sparse3D\_Pillars, SW3D\_Express, Hier3D\_Chiplet, and torus variants,
+        with weight-based TABLE routing and explicit ports.
+  \item \textbf{Reproducible method.} Injection sweeps on \texttt{gem5}/\Ruby\
+        with a knee detector; fairness controls (same VC count/buffers,
+        link/router latencies unless stated); and a \emph{process-aware}
+        mixed-latency setup.
+  \item \textbf{Findings.} Equal-latency baseline: 3D $>$ 2D by $\sim$35\%;
+        adding an escape VC raises the 3D gap to $\ge$50–60\%.
+        When dense Z is penalized (Z=4) but sparse-Z uses faster TSVs (Z=1),
+        torus provides the largest headroom and Mesh3D\_XYZ $\approx$ Mesh\_XY.
+        Z-latency sweeps show a stable torus multiplier of
+        $\approx$2.2–2.4$\times$ in the knee.
+  \item \textbf{Guidance.} If area allows wrap-around, enable torus first; else,
+        use sparse-Z to gain TSV process margin and reduce effective Z-latency.
+        In either case, keep an escape VC to safely exploit 3D path diversity.
 \end{itemize}
 
 \section{Background and Related Work}
-\subsection{Dense 3D Mesh vs.\ 2D Mesh}
-3D Mesh reduces average hop count by adding Z edges to the 2D grid, which can improve latency and throughput at a fixed router count. We briefly review dimension-order routing (DOR) and weight-based TABLE routing in \Ruby, and how link/router latencies model physical effects.
 
-\subsection{Manufacturability and TSV Economics}
-Prior work (e.g., cluster mesh proposals) notes that a TSV per router can hurt yield and area. We discuss TSV pitch, thermal implications, and common mitigations (sharing, pillars, chiplets).
+\ \ \ \ \textbf{Routing models.} Dimension-order routing (XY/XYZ) is deadlock-free by
+construction. TABLE routing assigns per-port weights to bias directions.
+Reserving one \emph{escape VC} (VC$_0$) for an acyclic route set guarantees
+progress while other VCs exploit adaptivity.
 
-\subsection{Sparse-Vertical and Hierarchical 3D Fabrics}
-We summarize key ideas behind: hub-sharing (Cluster3D), pillar-based sparsity, small-world express links, and chiplet-level hierarchies, motivating our four concrete designs.
+\textbf{TSV economics $\rightarrow$ Z-latency.} Dense per-router TSVs raise
+yield and thermal risk; sparse-Z lowers TSV count and often enables better
+process/stacking. We proxy TSV quality with a Z-link latency parameter.
+
+\textbf{3D organizations.} Prior work spans dense meshes, pillar/hub sharing,
+express/long links, chiplet hierarchies, and torus wrap-arounds. We evaluate
+representative instances of these families with consistent router/link settings
+and a throughput-knee metric tailored to process-aware comparisons.
 
 \section{Topologies Implemented}
 This work adds Python topologies under \texttt{configs/topologies/}. All use \texttt{IntLink}/\texttt{ExtLink} wiring with explicit port names (e.g., \texttt{East}, \texttt{UpGW}, \texttt{EastExp}) and \emph{weights} to guide TABLE routing.
@@ -258,34 +312,91 @@ Empirically, the 2D Mesh exhibits a clear knee (threshold throughput) around $\s
 
 \paragraph{Fairness and limits.} Both 2D and 3D reserve exactly one escape VC; buffer sizes and VC counts per input port are identical. Our current sweep upper bound is 0.7 offered load; future work will extend the range to locate the 3D knee more precisely.
 
-\subsection{Sparse-Z Designs under a Fixed Vertical Budget}
-\label{sec:sparse-results}
-We normalize each design to a comparable TSV count (or pillar density) and evaluate:
-\begin{itemize}[leftmargin=1em]
-  \item Latency/throughput curves across traffic patterns.
-  \item Avg.\ link utilization and hop distributions.
-  \item Sensitivity to vertical speedup and gateway count.
+\subsubsection{TSV-Latency Sensitivity: Sparse3D vs.\ Sparse3D\_Pillars\_torus}
+\label{subsec:z-latency-sweep}
+
+To quantify manufacturing choices, we sweep TSV settings with Z-latency $\in \{1,2,4\}$ for two families:
+\emph{Sparse3D\_Pillars} and \emph{Sparse3D\_Pillars\_torus}. The measured
+\emph{throughput knees} under uniform traffic are:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Topology} & \textbf{Z=1} & \textbf{Z=2} & \textbf{Z=4} \\
+\midrule
+Sparse3D\_Pillars & $\sim$0.10 & $\sim$0.16 & $\sim$0.22 \\
+Sparse3D\_Pillars\_torus & $\sim$0.22 & $\sim$0.38 & $\sim$0.50 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=.92\linewidth]{./figs/tsv_latency_sweep_sparse_torus.png}
+  \caption{Z-latency sensitivity for Sparse3D vs.\ Sparse3D\_Pillars\_torus under uniform traffic.
+  The torus-augmented design consistently pushes the knee higher (about $2.2\!\times$--$2.4\!\times$
+  across the three Z settings in our runs).}
+  \label{fig:z-latency-sweep}
+\end{figure}
+
+\noindent\textbf{Design takeaways.}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Torus multiplier.} For the same Z setting, adding torus roughly doubles the knee
+        (e.g., $0.22/0.10\!\approx\!2.2$, $0.38/0.16\!\approx\!2.4$, $0.50/0.22\!\approx\!2.3$).
+  \item \textbf{Process-first budget use.} If TSV process can be improved for a \emph{sparse} Z budget,
+        prioritizing lower effective Z-latency yields a larger payoff than micro-level tweaks on a non-torus grid.
+  \item \textbf{Where to spend area.} If floorplan permits wrap-around, torus offers the highest headroom per TSV;
+        otherwise, investing TSV quality on a sparse grid still moves the knee materially.
+\end{itemize}
+
+\subsection{Process-Aware Case Study: Mixed Z-Link Latency}
+\label{subsec:process-aware-mixed-z}
+
+\textbf{Setup.} To emulate realistic manufacturing trade-offs, we keep XY link latency at~1
+for all topologies. We penalize the dense 3D mesh by setting its Z links to latency~4
+(to reflect TSV difficulty when every router has a TSV), while \emph{sparser-Z} topologies
+use Z-latency~=~1 (better TSV process made possible by lower TSV density).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=.92\linewidth]{./figs/overview_mixed_zlatency.png}
+  \caption{Process-aware comparison under uniform traffic:
+  dense 3D mesh uses Z-latency~4; all other sparse-Z designs use Z-latency~1.
+  Torus3D shows the largest headroom; Mesh\_XY and Mesh3D\_XYZ become close because
+  the latter is bottlenecked by slow Z.}
+  \label{fig:process-aware-overview}
+\end{figure}
+
+\noindent\textbf{Observations.}
+\begin{itemize}[leftmargin=1.2em]
+  \item \textbf{Torus impact is substantial.} Torus3D continues scaling to the highest accepted rate
+        (cf.\ Fig.~\ref{fig:process-aware-overview}); whether such wrapping can be realized within the
+        floorplan and timing is a first-order implementation question.
+  \item \textbf{Mesh3D\_XYZ $\approx$ Mesh\_XY under slow Z.} This contrasts with our equal-latency baseline
+        where 3D $>$ 2D. Here the 3D advantage is dominated by TSV process (Z-latency), whereas 2D is constrained
+        by \emph{area/diameter}. \textit{Process vs.\ area} is therefore a central chip-production trade-off.
+  \item \textbf{Generalization to other 3D variants.} Topology evolution alone yields limited gains if the Z process
+        is poor; with improved TSV (enabled by sparsity), benefits reappear. Hence, \emph{manufacturing and
+        floorplanning constraints often dominate over micro-topology tweaks}.
 \end{itemize}
 
 
-\subsection{Ablations}
-\paragraph{Cluster size \& hub speedup.} How 2x2 vs.\ 3x3 clusters and hub DVFS change the knee point.
-\paragraph{Pillar spacing $(P_x,P_y)$.} Trade-offs between detour cost and TSV count.
-\paragraph{Express budget $B$ and period $K$.} Diminishing returns of additional long links.
-\paragraph{Chiplet gateways.} One vs.\ two gateways per chiplet and backbone shape.
-
 \section{Discussion}
-\subsection{Which Sparse Pattern Scales Best?}
-We interpret the results through the lens of manufacturing and thermal feasibility, highlighting topologies that get “close enough” to dense 3D Mesh while using far fewer vertical links.
+\subsection{Manufacturing-driven guidance.}
+Our process-aware study (Secs.~\ref{subsec:process-aware-mixed-z}, \ref{subsec:z-latency-sweep})
+shows that (i) Z-latency (TSV quality) can erase or amplify the theoretical 3D gain;
+(ii) torus raises the throughput knee by about $2.2$--$2.4\times$ across Z settings in our runs;
+(iii) when TSV density is reduced (sparse-Z), the saved process margin can be reinvested to
+achieve lower Z-latency and reclaim most of the 3D advantage. In short: \emph{process \& area
+choices dominate topology micro-variants}—optimize TSV quality or enable torus first, then tune the grid.
+
 
 \subsection{Routing Simplicity vs.\ Performance}
 TABLE routing with weights gives strong baselines without custom algorithms; we note when custom adaptive schemes might help (left as future work).
 
 \subsection{Limitations}
-Cycle-accurate microarchitectural models (buffers, VC allocation) follow Garnet defaults; real silicon may differ in timing closure and power. Our synthetic traffic stresses the network but does not model specific workloads.
 
 \section{Conclusion}
-3D NoCs are promising, but dense Z wiring is difficult to manufacture at scale. Our study shows that structured sparsity—hub sharing, pillars, express links, and chiplets—retains much of the performance benefit while substantially reducing vertical resources. Weight-based TABLE routing is a practical mechanism to guide traffic along these sparse conduits.
 
 \appendix
 
